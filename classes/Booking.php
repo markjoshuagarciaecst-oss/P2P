@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/User.php';
+require_once __DIR__ . '/Transaction.php';
+require_once __DIR__ . '/Notification.php';
+
 // Booking Class - handles session bookings and scheduling
 
 class Booking {
@@ -144,7 +148,18 @@ class Booking {
     public function complete($bookingId, $teacherId) {
         $booking = $this->getBookingById($bookingId);
         
-        if (!$booking || $booking['teacher_id'] != $teacherId || $booking['status'] != 'accepted') {
+        if (!$booking) {
+            error_log("Booking not found: $bookingId");
+            return false;
+        }
+        
+        if ($booking['teacher_id'] != $teacherId) {
+            error_log("Teacher ID mismatch: expected {$booking['teacher_id']}, got $teacherId");
+            return false;
+        }
+        
+        if ($booking['status'] != 'accepted') {
+            error_log("Booking status is not accepted: {$booking['status']}");
             return false;
         }
         
@@ -155,7 +170,13 @@ class Booking {
         $user = new User();
         $learner = $user->getUserById($learnerId);
         
+        if (!$learner) {
+            error_log("Learner not found: $learnerId");
+            return false;
+        }
+        
         if ($learner['points'] < $points) {
+            error_log("Learner {$learnerId} has {$learner['points']} points, needs $points");
             return false;
         }
         
@@ -165,15 +186,19 @@ class Booking {
         try {
             // Deduct from learner
             $stmt = $this->db->prepare("UPDATE users SET points = points - ? WHERE id = ?");
-            $stmt->execute([$points, $learnerId]);
+            $result1 = $stmt->execute([$points, $learnerId]);
             
             // Add to teacher
             $stmt = $this->db->prepare("UPDATE users SET points = points + ? WHERE id = ?");
-            $stmt->execute([$points, $teacherId]);
+            $result2 = $stmt->execute([$points, $teacherId]);
             
             // Update booking status
             $stmt = $this->db->prepare("UPDATE bookings SET status = 'completed', points_transferred = 1 WHERE id = ?");
-            $stmt->execute([$bookingId]);
+            $result3 = $stmt->execute([$bookingId]);
+            
+            if (!$result1 || !$result2 || !$result3) {
+                throw new Exception("Database update failed");
+            }
             
             // Record transactions
             $transaction = new Transaction();
@@ -185,10 +210,17 @@ class Booking {
             $notification->create($learnerId, 'Session Completed', "Your session for '{$booking['skill_title']}' has been completed. {$points} points have been transferred.", 'session_completed');
             $notification->create($teacherId, 'Session Completed', "Your session for '{$booking['skill_title']}' has been completed. You earned {$points} points!", 'session_completed');
             
+            // Refresh session points if current user is involved
+            if ($learnerId == getUserId() || $teacherId == getUserId()) {
+                $currentUser = $user->getUserById(getUserId());
+                $_SESSION['user_points'] = $currentUser['points'];
+            }
+            
             $this->db->commit();
             return true;
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Transaction failed: " . $e->getMessage());
             return false;
         }
     }

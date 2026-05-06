@@ -75,6 +75,26 @@ class User {
         $stmt->execute(["%$skillTitle%"]);
         return $stmt->fetchAll();
     }
+
+    // Search users by name, email, bio, or skill title
+    public function search($query, $limit = 50, $offset = 0) {
+        $term = "%$query%";
+        $stmt = $this->db->prepare("SELECT DISTINCT u.*, 
+            (SELECT COUNT(*) FROM skills s WHERE s.user_id = u.id AND s.is_active = 1) AS skills_count
+            FROM users u
+            LEFT JOIN skills s ON u.id = s.user_id
+            WHERE u.role = 'user' AND u.is_active = 1
+            AND (
+                u.name LIKE ? OR 
+                u.email LIKE ? OR 
+                u.bio LIKE ? OR 
+                s.title LIKE ?
+            )
+            ORDER BY u.name ASC
+            LIMIT ? OFFSET ?");
+        $stmt->execute([$term, $term, $term, $term, $limit, $offset]);
+        return $stmt->fetchAll();
+    }
     
     // Update points
     public function updatePoints($userId, $amount, $type) {

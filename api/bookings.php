@@ -40,11 +40,27 @@ switch ($action) {
         
     case 'complete':
         $bookingId = (int)$_POST['id'];
-        if ($bookingObj->complete($bookingId, getUserId())) {
-            $response['success'] = true;
-            $response['message'] = 'Session completed! Points transferred.';
+        $userId = getUserId();
+        
+        // Get booking details for better error messages
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM bookings WHERE id = ?");
+        $stmt->execute([$bookingId]);
+        $booking = $stmt->fetch();
+        
+        if (!$booking) {
+            $response['message'] = 'Booking not found.';
+        } elseif ($booking['teacher_id'] != $userId) {
+            $response['message'] = 'You are not the teacher for this booking.';
+        } elseif ($booking['status'] != 'accepted') {
+            $response['message'] = 'Booking must be accepted before it can be completed.';
         } else {
-            $response['message'] = 'Failed to complete session. Make sure learner has enough points.';
+            if ($bookingObj->complete($bookingId, $userId)) {
+                $response['success'] = true;
+                $response['message'] = 'Session completed! Points transferred.';
+            } else {
+                $response['message'] = 'Failed to complete session. Please check that the learner has enough points.';
+            }
         }
         break;
         

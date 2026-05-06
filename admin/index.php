@@ -51,7 +51,20 @@ $recentBookings = $stmt->fetchAll();
 <?php include '../includes/header.php'; ?>
 
 <div class="container py-4">
-    <h2 class="mb-4"><i class="fas fa-cogs me-2"></i>Admin Dashboard</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cogs me-2"></i>Admin Dashboard</h2>
+        <div>
+            <a href="users.php" class="btn btn-outline-primary me-2">
+                <i class="fas fa-users me-1"></i>Users
+            </a>
+            <a href="bookings.php" class="btn btn-outline-info me-2">
+                <i class="fas fa-calendar me-1"></i>Bookings
+            </a>
+            <a href="reports.php" class="btn btn-outline-success">
+                <i class="fas fa-chart-bar me-1"></i>Reports
+            </a>
+        </div>
+    </div>
     
     <!-- Stats -->
     <div class="row g-3 mb-4">
@@ -91,7 +104,7 @@ $recentBookings = $stmt->fetchAll();
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-users me-2"></i>Recent Users</h5>
-                    <a href="users.php" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="users.php" class="btn btn-sm btn-outline-primary">Manage Users</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -101,6 +114,7 @@ $recentBookings = $stmt->fetchAll();
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Points</th>
+                                    <th>Status</th>
                                     <th>Joined</th>
                                 </tr>
                             </thead>
@@ -110,6 +124,13 @@ $recentBookings = $stmt->fetchAll();
                                     <td><?php echo sanitize($user['name']); ?></td>
                                     <td><?php echo sanitize($user['email']); ?></td>
                                     <td><?php echo $user['points']; ?></td>
+                                    <td>
+                                        <?php if ($user['is_active']): ?>
+                                        <span class="badge bg-success">Active</span>
+                                        <?php else: ?>
+                                        <span class="badge bg-danger">Banned</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo formatDate($user['created_at']); ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -125,7 +146,7 @@ $recentBookings = $stmt->fetchAll();
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Recent Bookings</h5>
-                    <a href="bookings.php" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="bookings.php" class="btn btn-sm btn-outline-primary">Manage Bookings</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -136,6 +157,7 @@ $recentBookings = $stmt->fetchAll();
                                     <th>Learner</th>
                                     <th>Teacher</th>
                                     <th>Status</th>
+                                    <th>Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -149,10 +171,70 @@ $recentBookings = $stmt->fetchAll();
                                             <?php echo ucfirst($booking['status']); ?>
                                         </span>
                                     </td>
+                                    <td><?php echo formatDate($booking['created_at']); ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>System Activity (Last 24 Hours)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <?php
+                        // Get activity stats for last 24 hours
+                        $yesterday = date('Y-m-d H:i:s', strtotime('-24 hours'));
+                        
+                        $stmt = $db->prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= ?");
+                        $stmt->execute([$yesterday]);
+                        $newUsers = $stmt->fetch()['count'];
+                        
+                        $stmt = $db->prepare("SELECT COUNT(*) as count FROM bookings WHERE created_at >= ?");
+                        $stmt->execute([$yesterday]);
+                        $newBookings = $stmt->fetch()['count'];
+                        
+                        $stmt = $db->prepare("SELECT COUNT(*) as count FROM bookings WHERE status = 'completed' AND updated_at >= ?");
+                        $stmt->execute([$yesterday]);
+                        $completedSessions = $stmt->fetch()['count'];
+                        
+                        $stmt = $db->prepare("SELECT COUNT(*) as count FROM point_transactions WHERE created_at >= ?");
+                        $stmt->execute([$yesterday]);
+                        $transactions = $stmt->fetch()['count'];
+                        ?>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-primary"><?php echo $newUsers; ?></div>
+                                <div class="text-muted">New Users</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-info"><?php echo $newBookings; ?></div>
+                                <div class="text-muted">New Bookings</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-success"><?php echo $completedSessions; ?></div>
+                                <div class="text-muted">Sessions Completed</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h3 text-warning"><?php echo $transactions; ?></div>
+                                <div class="text-muted">Point Transactions</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

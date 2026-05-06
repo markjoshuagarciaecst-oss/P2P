@@ -28,6 +28,18 @@ $stats = $userObj->getUserStats($userId);
 $userSkills = $skillObj->getUserSkills($userId);
 $userReviews = $reviewObj->getUserReviews($userId, 10);
 
+$chatLink = '';
+if (isLoggedIn() && getUserId() != $userId) {
+    $chatBookingStmt = Database::getInstance()->prepare("SELECT id FROM bookings WHERE ((teacher_id = ? AND learner_id = ?) OR (teacher_id = ? AND learner_id = ?)) AND status IN ('accepted','completed') ORDER BY updated_at DESC, created_at DESC LIMIT 1");
+    $chatBookingStmt->execute([getUserId(), $userId, $userId, getUserId()]);
+    $existingChatBooking = $chatBookingStmt->fetch();
+    if ($existingChatBooking) {
+        $chatLink = APP_URL . '/pages/chat.php?booking_id=' . $existingChatBooking['id'];
+    } else {
+        $chatLink = APP_URL . '/pages/chat.php?user_id=' . $userId;
+    }
+}
+
 $error = '';
 $success = '';
 
@@ -120,6 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isLoggedIn() && getUserId() == $use
                     </div>
                     
                     <hr>
+                    <?php if (!empty($chatLink)): ?>
+                    <a href="<?php echo $chatLink; ?>" class="btn btn-success w-100 mb-3">
+                        <i class="fas fa-comments me-1"></i> Chat
+                    </a>
+                    <?php endif; ?>
                     
                     <small class="text-muted">Member since <?php echo formatDate($profileUser['created_at']); ?></small>
                 </div>

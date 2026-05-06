@@ -11,7 +11,12 @@ require_once __DIR__ . '/../classes/Notification.php';
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' : ''; ?><?php echo APP_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-timepicker/0.5.2/css/bootstrap-timepicker.min.css" />
     <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css">
+    <script>
+        window.APP_URL = '<?php echo APP_URL; ?>';
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -34,8 +39,22 @@ require_once __DIR__ . '/../classes/Notification.php';
                     <li class="nav-item">
                         <a class="nav-link" href="<?php echo APP_URL; ?>/pages/dashboard.php">Dashboard</a>
                     </li>
+                    <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?php echo APP_URL; ?>/admin/index.php">
+                            <i class="fas fa-cog me-1"></i>Admin Panel
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?php echo APP_URL; ?>/pages/chat.php">Chat</a>
+                    </li>
                     <?php endif; ?>
                 </ul>
+                <form class="d-flex ms-lg-3 my-2 my-lg-0" method="GET" action="<?php echo APP_URL; ?>/pages/search-users.php">
+                    <input class="form-control form-control-sm" type="search" placeholder="Search users" aria-label="Search users" name="search">
+                    <button class="btn btn-outline-light btn-sm ms-2" type="submit"><i class="fas fa-search"></i></button>
+                </form>
                 <ul class="navbar-nav">
                     <?php if (isLoggedIn()): 
                         $notification = new Notification();
@@ -58,7 +77,7 @@ require_once __DIR__ . '/../classes/Notification.php';
                             <?php else: ?>
                                 <?php foreach ($recentNotifications as $notif): ?>
                                 <li>
-                                    <a class="dropdown-item <?php echo $notif['is_read'] ? '' : 'fw-bold'; ?>" href="pages/notifications.php?read=<?php echo $notif['id']; ?>">
+                                    <a class="dropdown-item <?php echo $notif['is_read'] ? '' : 'fw-bold'; ?>" href="<?php echo APP_URL; ?>/pages/notifications.php?read=<?php echo $notif['id']; ?>">
                                         <small><?php echo sanitize($notif['title']); ?></small><br>
                                         <small class="text-muted"><?php echo formatDate($notif['created_at']); ?></small>
                                     </a>

@@ -31,17 +31,21 @@ function initTooltips() {
 
 // Initialize datepickers
 function initDatepickers() {
-    $('.datepicker').datepicker({
-        format: 'yyyy-mm-dd',
-        startDate: '0d',
-        autoclose: true
-    });
+    if ($.fn.datepicker) {
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            startDate: '0d',
+            autoclose: true
+        });
+    }
     
-    $('.timepicker').timepicker({
-        showMeridian: false,
-        minuteStep: 15,
-        defaultTime: '10:00'
-    });
+    if ($.fn.timepicker) {
+        $('.timepicker').timepicker({
+            showMeridian: false,
+            minuteStep: 15,
+            defaultTime: '10:00'
+        });
+    }
 }
 
 // Initialize search
@@ -50,7 +54,7 @@ function initSearch() {
         e.preventDefault();
         var query = $('#searchInput').val();
         if (query.length > 0) {
-            window.location.href = 'pages/skills.php?search=' + encodeURIComponent(query);
+            window.location.href = window.APP_URL + '/pages/skills.php?search=' + encodeURIComponent(query);
         }
     });
 }
@@ -142,7 +146,7 @@ function initAjax() {
         },
         error: function(xhr) {
             if (xhr.status === 401) {
-                window.location.href = 'pages/login.php?redirect=' + encodeURIComponent(window.location.pathname);
+                window.location.href = window.APP_URL + '/pages/login.php?redirect=' + encodeURIComponent(window.location.pathname);
             } else if (xhr.status === 403) {
                 showToast('Access denied', 'error');
             } else if (xhr.status === 500) {
@@ -158,7 +162,7 @@ function initNotifications() {
     $('.notification-item').on('click', function() {
         var id = $(this).data('id');
         if (id) {
-            $.post('api/notifications.php', { action: 'mark_read', id: id });
+            $.post(window.APP_URL + '/api/notifications.php', { action: 'mark_read', id: id });
         }
     });
 }
@@ -206,7 +210,7 @@ function showToast(message, type = 'info') {
 function acceptBooking(bookingId) {
     if (confirm('Are you sure you want to accept this booking?')) {
         $.ajax({
-            url: '/P2P/api/bookings.php',
+            url: window.APP_URL + '/api/bookings.php',
             type: 'POST',
             dataType: 'json',
             data: { action: 'accept', id: bookingId },
@@ -231,7 +235,7 @@ function acceptBooking(bookingId) {
 function rejectBooking(bookingId) {
     if (confirm('Are you sure you want to reject this booking?')) {
         $.ajax({
-            url: '/P2P/api/bookings.php',
+            url: window.APP_URL + '/api/bookings.php',
             type: 'POST',
             dataType: 'json',
             data: { action: 'reject', id: bookingId },
@@ -254,13 +258,16 @@ function rejectBooking(bookingId) {
 }
 
 function completeBooking(bookingId) {
+    console.log('completeBooking called with ID:', bookingId);
     if (confirm('Mark this session as completed? Points will be transferred.')) {
+        console.log('User confirmed, making AJAX call...');
         $.ajax({
-            url: '/P2P/api/bookings.php',
+            url: window.APP_URL + '/api/bookings.php',
             type: 'POST',
             dataType: 'json',
             data: { action: 'complete', id: bookingId },
             success: function(response) {
+                console.log('AJAX success response:', response);
                 if (response.success) {
                     showToast('Session completed! Points transferred.', 'success');
                     setTimeout(function() {
@@ -271,17 +278,20 @@ function completeBooking(bookingId) {
                 }
             },
             error: function(xhr, status, error) {
+                console.error('AJAX error:', xhr.status, xhr.responseText);
                 showToast('Error: ' + error, 'error');
                 console.error('AJAX Error:', xhr.responseText);
             }
         });
+    } else {
+        console.log('User cancelled the completion');
     }
 }
 
 function cancelBooking(bookingId) {
     if (confirm('Are you sure you want to cancel this booking?')) {
         $.ajax({
-            url: '/P2P/api/bookings.php',
+            url: window.APP_URL + '/api/bookings.php',
             type: 'POST',
             dataType: 'json',
             data: { action: 'cancel', id: bookingId },
@@ -313,7 +323,7 @@ function submitReview(bookingId) {
         return;
     }
     
-    $.post('api/reviews.php', { 
+    $.post(window.APP_URL + '/api/reviews.php', { 
         action: 'create', 
         booking_id: bookingId, 
         rating: rating, 
@@ -333,7 +343,7 @@ function submitReview(bookingId) {
 // Skill functions
 function deleteSkill(skillId) {
     if (confirm('Are you sure you want to delete this skill?')) {
-        $.post('api/skills.php', { action: 'delete', id: skillId }, function(response) {
+        $.post(window.APP_URL + '/api/skills.php', { action: 'delete', id: skillId }, function(response) {
             if (response.success) {
                 showToast('Skill deleted!', 'success');
                 setTimeout(function() {
@@ -347,7 +357,7 @@ function deleteSkill(skillId) {
 }
 
 function toggleSkillStatus(skillId) {
-    $.post('api/skills.php', { action: 'toggle_status', id: skillId }, function(response) {
+    $.post(window.APP_URL + '/api/skills.php', { action: 'toggle_status', id: skillId }, function(response) {
         if (response.success) {
             showToast('Skill status updated!', 'success');
             setTimeout(function() {
@@ -361,7 +371,7 @@ function toggleSkillStatus(skillId) {
 
 // User functions
 function followUser(userId) {
-    $.post('api/users.php', { action: 'follow', id: userId }, function(response) {
+    $.post(window.APP_URL + '/api/users.php', { action: 'follow', id: userId }, function(response) {
         if (response.success) {
             showToast('Following user!', 'success');
             setTimeout(function() {
@@ -451,7 +461,7 @@ function debounce(func, wait) {
 $('#searchInput').on('input', debounce(function() {
     var query = $(this).val();
     if (query.length >= 2) {
-        $.get('api/search.php', { q: query }, function(response) {
+        $.get(window.APP_URL + '/api/search.php', { q: query }, function(response) {
             var suggestions = response.map(function(item) {
                 return '<div class="suggestion-item" data-id="' + item.id + '">' + item.title + '</div>';
             });
