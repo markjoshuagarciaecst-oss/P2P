@@ -126,7 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             </small>
                         </div>
                         <div class="col-md-2 text-center">
-                            <span class="points-badge"><?php echo $booking['points_required']; ?> pts</span>
+                            <span class="points-badge"><?php echo $booking['total_points'] ?? $booking['points_required']; ?> pts</span>
+                            <br><small class="text-muted"><?php echo $booking['session_duration'] ?? 1; ?> hr</small>
                         </div>
                         <div class="col-md-2 text-end">
                             <span class="booking-status <?php echo strtolower($booking['status']); ?>">
@@ -136,6 +137,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <a href="chat.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block">
                                 <i class="fas fa-comments me-1"></i>Chat
                             </a>
+                            <?php if (!$booking['learner_confirmed']): ?>
+                            <button class="btn btn-sm btn-success mt-2 d-block w-100" 
+                                    onclick="learnerConfirmBooking(<?php echo $booking['id']; ?>)">
+                                <i class="fas fa-check me-1"></i>Confirm Complete
+                            </button>
+                            <?php else: ?>
+                            <span class="badge bg-success mt-2 d-block">You confirmed ✓</span>
+                            <?php endif; ?>
                             <?php elseif ($booking['status'] === 'completed'): ?>
                                 <?php 
                                 $existingReview = $reviewObj->getReviewByBooking($booking['id'], getUserId());
@@ -220,7 +229,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             </small>
                         </div>
                         <div class="col-md-2 text-center">
-                            <span class="points-badge">+<?php echo $booking['points_required']; ?> pts</span>
+                            <span class="points-badge">+<?php echo $booking['total_points'] ?? $booking['points_required']; ?> pts</span>
+                            <br><small class="text-muted"><?php echo $booking['session_duration'] ?? 1; ?> hr</small>
                         </div>
                         <div class="col-md-2 text-end">
                             <span class="booking-status <?php echo strtolower($booking['status']); ?>">
@@ -239,9 +249,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <a href="chat.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block mb-2">
                                 <i class="fas fa-comments me-1"></i>Chat
                             </a>
-                            <button class="btn btn-primary btn-sm d-block w-100" onclick="completeBooking(<?php echo $booking['id']; ?>)">
+                            <?php if (!$booking['teacher_confirmed']): ?>
+                            <button class="btn btn-primary btn-sm d-block w-100" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#completeModal<?php echo $booking['id']; ?>">
                                 <i class="fas fa-check-double me-1"></i>Complete
                             </button>
+                            <?php else: ?>
+                            <span class="badge bg-success mt-1 d-block">You confirmed ✓</span>
+                            <small class="text-muted d-block mt-1">Waiting for learner</small>
+                            <?php endif; ?>
                             <?php elseif ($booking['status'] === 'completed'): ?>
                                 <?php 
                                 $existingReview = $reviewObj->getReviewByBooking($booking['id'], getUserId());
@@ -257,6 +274,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
             </div>
             
+            <!-- Complete Session Confirmation Modal (Teacher) -->
+            <?php if ($booking['status'] === 'accepted' && !$booking['teacher_confirmed']): ?>
+            <div class="modal fade" id="completeModal<?php echo $booking['id']; ?>" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title"><i class="fas fa-check-double me-2"></i>Mark Session as Complete</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure the session for <strong><?php echo sanitize($booking['skill_title']); ?></strong> with <strong><?php echo sanitize($booking['learner_name']); ?></strong> is complete?</p>
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Mutual agreement required.</strong> Both you and the learner must confirm before 
+                                <strong><?php echo $booking['total_points'] ?? $booking['points_required']; ?> points</strong> are transferred.
+                                The learner will receive a notification to confirm their side.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" 
+                                    onclick="teacherConfirmBooking(<?php echo $booking['id']; ?>)" 
+                                    data-bs-dismiss="modal">
+                                <i class="fas fa-check-double me-1"></i>Yes, Session is Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Review Modal for Teacher -->
             <?php if ($booking['status'] === 'completed'): ?>
             <?php 

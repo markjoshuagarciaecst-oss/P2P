@@ -6,7 +6,7 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 
 // Application Configuration
-define('APP_NAME', 'SkillSwap');
+define('APP_NAME', 'Time for skill');
 define('APP_URL', 'http://localhost/P2P');
 define('DEFAULT_POINTS', 100);
 

@@ -33,22 +33,27 @@ $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isLoggedIn()) {
     $scheduledDate = sanitize($_POST['scheduled_date'] ?? '');
     $scheduledTime = sanitize($_POST['scheduled_time'] ?? '');
-    
+    $sessionDuration = max(1, (int)($_POST['session_duration'] ?? 1));
+    $maxHours = max(1, (int)($skill['max_session_hours'] ?? 1));
+
     if (empty($scheduledDate) || empty($scheduledTime)) {
         $error = 'Please select date and time';
     } elseif (strtotime($scheduledDate) < strtotime('today')) {
         $error = 'Please select a future date';
+    } elseif ($sessionDuration > $maxHours) {
+        $error = "The teacher allows a maximum of {$maxHours} hour(s) per session.";
     } else {
         // Check if user has enough points
         $currentUser = $userObj->getUserById(getUserId());
-        if ($currentUser['points'] < $skill['points_required']) {
-            $error = 'Insufficient points. Please earn more points first.';
+        $totalPoints = $skill['points_required'] * $sessionDuration;
+        if ($currentUser['points'] < $totalPoints) {
+            $error = "Insufficient points. This {$sessionDuration}-hour session costs {$totalPoints} points but you only have {$currentUser['points']} points.";
         } elseif ($skill['user_id'] == getUserId()) {
             $error = 'You cannot book your own skill';
         } else {
-            $bookingId = $bookingObj->create(getUserId(), $skill['user_id'], $skillId, $scheduledDate, $scheduledTime);
+            $bookingId = $bookingObj->create(getUserId(), $skill['user_id'], $skillId, $scheduledDate, $scheduledTime, $sessionDuration);
             if ($bookingId) {
-                $success = 'Booking request sent successfully!';
+                $success = "Booking request sent! ({$sessionDuration} hr session — {$totalPoints} pts)";
             } else {
                 $error = 'Failed to create booking. Please try again.';
             }
@@ -110,9 +115,9 @@ $teacherReviews = $reviewObj->getUserReviews($skill['user_id'] ?? 0, 5);
                         </div>
                         <div class="ms-auto text-end">
                             <div class="points-badge">
-                                <i class="fas fa-coins"></i> <?php echo $skill['points_required']; ?> pts
+                                <i class="fas fa-coins"></i> <?php echo $skill['points_required']; ?> pts/hr
                             </div>
-                            <small class="text-muted">per session</small>
+                            <small class="text-muted">max <?php echo (int)($skill['max_session_hours'] ?? 1); ?> hr<?php echo ($skill['max_session_hours'] ?? 1) > 1 ? 's' : ''; ?> per session</small>
                         </div>
                     </div>
                     
@@ -176,6 +181,7 @@ $teacherReviews = $reviewObj->getUserReviews($skill['user_id'] ?? 0, 5);
                     <?php else: ?>
                         <?php 
                         $currentUser = $userObj->getUserById(getUserId());
+                        $maxHours = max(1, (int)($skill['max_session_hours'] ?? 1));
                         if ($currentUser['points'] < $skill['points_required']): ?>
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -212,18 +218,52 @@ $teacherReviews = $reviewObj->getUserReviews($skill['user_id'] ?? 0, 5);
                                     <option value="20:00:00">8:00 PM</option>
                                 </select>
                             </div>
-                            
-                            <div class="alert alert-info">
-                                <small>
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    This will cost <strong><?php echo $skill['points_required']; ?> points</strong> from your balance.
-                                </small>
+
+                            <div class="mb-3">
+                                <label for="session_duration" class="form-label">
+                                    Session Duration (hours)
+                                    <span class="text-muted fw-normal">— max <?php echo $maxHours; ?> hr<?php echo $maxHours > 1 ? 's' : ''; ?></span>
+                                </label>
+                                <input type="number" class="form-control" id="session_duration" name="session_duration"
+                                       value="1" min="1" max="<?php echo $maxHours; ?>" required
+                                       oninput="updatePointsPreview()">
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-100">
+                            <div class="alert alert-info" id="pointsPreview">
+                                <small>
+                                    <i class="fas fa-coins me-1"></i>
+                                    Cost: <strong id="previewCost"><?php echo $skill['points_required']; ?></strong> pts
+                                    &nbsp;|&nbsp; Your balance: <strong><?php echo $currentUser['points']; ?></strong> pts
+                                </small>
+                                <div id="affordWarning" class="text-danger mt-1" style="display:none;">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Not enough points for this duration.
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="bookBtn">
                                 <i class="fas fa-paper-plane me-2"></i>Send Booking Request
                             </button>
                         </form>
+                        <script>
+                        var basePoints  = <?php echo (int)$skill['points_required']; ?>;
+                        var myPoints    = <?php echo (int)$currentUser['points']; ?>;
+                        var maxHours    = <?php echo $maxHours; ?>;
+
+                        function updatePointsPreview() {
+                            var dur  = Math.max(1, Math.min(parseInt(document.getElementById('session_duration').value) || 1, maxHours));
+                            var cost = basePoints * dur;
+                            document.getElementById('previewCost').textContent = cost;
+                            var warn = document.getElementById('affordWarning');
+                            var btn  = document.getElementById('bookBtn');
+                            if (cost > myPoints) {
+                                warn.style.display = 'block';
+                                btn.disabled = true;
+                            } else {
+                                warn.style.display = 'none';
+                                btn.disabled = false;
+                            }
+                        }
+                        </script>
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>

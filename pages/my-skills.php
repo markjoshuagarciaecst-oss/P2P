@@ -25,11 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $category = sanitize($_POST['category'] ?? '');
     $skillLevel = sanitize($_POST['skill_level'] ?? '');
     $pointsRequired = (int)($_POST['points_required'] ?? 10);
+    $maxSessionHours = max(1, (int)($_POST['max_session_hours'] ?? 1));
     
     if (empty($title) || empty($description) || empty($category)) {
         $error = 'Please fill in all required fields';
     } else {
-        $skillId = $skillObj->create(getUserId(), $title, $description, $category, $skillLevel, $pointsRequired);
+        $skillId = $skillObj->create(getUserId(), $title, $description, $category, $skillLevel, $pointsRequired, $maxSessionHours);
         if ($skillId) {
             $success = 'Skill added successfully!';
         } else {
@@ -96,8 +97,11 @@ if (isset($_GET['delete'])) {
                     <h5><?php echo sanitize($skill['title']); ?></h5>
                     <p class="text-muted"><?php echo substr(sanitize($skill['description']), 0, 100); ?>...</p>
                     <div class="points-badge">
-                        <i class="fas fa-coins"></i> <?php echo $skill['points_required']; ?> pts/session
+                        <i class="fas fa-coins"></i> <?php echo $skill['points_required']; ?> pts/hr
                     </div>
+                    <small class="text-muted d-block mt-1">
+                        <i class="fas fa-clock me-1"></i>Max <?php echo (int)($skill['max_session_hours'] ?? 1); ?> hr<?php echo ($skill['max_session_hours'] ?? 1) > 1 ? 's' : ''; ?> per session
+                    </small>
                 </div>
                 <div class="card-footer bg-white">
                     <div class="d-flex justify-content-between">
@@ -155,9 +159,15 @@ if (isset($_GET['delete'])) {
                     </div>
                     
                     <div class="mb-3">
-                        <label for="points_required" class="form-label">Points per Session</label>
+                        <label for="points_required" class="form-label">Points per Hour</label>
                         <input type="number" class="form-control" id="points_required" name="points_required" value="10" min="1" max="100">
-                        <small class="text-muted">How many points learners will pay per session</small>
+                        <small class="text-muted">How many points learners pay per hour of teaching</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max_session_hours" class="form-label">Max Session Length (hours)</label>
+                        <input type="number" class="form-control" id="max_session_hours" name="max_session_hours" value="1" min="1" max="8">
+                        <small class="text-muted">The longest session you're willing to teach in one booking</small>
                     </div>
                 </div>
                 <div class="modal-footer">

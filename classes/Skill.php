@@ -9,15 +9,23 @@ class Skill {
     }
     
     // Create new skill listing
-    public function create($userId, $title, $description, $category, $skillLevel, $pointsRequired) {
-        $stmt = $this->db->prepare("INSERT INTO skills (user_id, title, description, category, skill_level, points_required) VALUES (?, ?, ?, ?, ?, ?)");
-        
+    public function create($userId, $title, $description, $category, $skillLevel, $pointsRequired, $maxSessionHours = 1) {
+        $maxSessionHours = max(1, (int)$maxSessionHours);
+
+        // Try inserting with max_session_hours; fall back if column doesn't exist yet
         try {
-            $stmt->execute([$userId, $title, $description, $category, $skillLevel, $pointsRequired]);
-            return $this->db->lastInsertId();
+            $stmt = $this->db->prepare("INSERT INTO skills (user_id, title, description, category, skill_level, points_required, max_session_hours) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$userId, $title, $description, $category, $skillLevel, $pointsRequired, $maxSessionHours]);
         } catch (PDOException $e) {
-            return false;
+            // max_session_hours column not yet migrated — insert without it
+            try {
+                $stmt = $this->db->prepare("INSERT INTO skills (user_id, title, description, category, skill_level, points_required) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$userId, $title, $description, $category, $skillLevel, $pointsRequired]);
+            } catch (PDOException $e2) {
+                return false;
+            }
         }
+        return $this->db->lastInsertId();
     }
     
     // Get skill by ID
@@ -67,15 +75,22 @@ class Skill {
     }
     
     // Update skill
-    public function update($skillId, $userId, $title, $description, $category, $skillLevel, $pointsRequired) {
-        $stmt = $this->db->prepare("UPDATE skills SET title = ?, description = ?, category = ?, skill_level = ?, points_required = ? WHERE id = ? AND user_id = ?");
-        
+    public function update($skillId, $userId, $title, $description, $category, $skillLevel, $pointsRequired, $maxSessionHours = 1) {
+        $maxSessionHours = max(1, (int)$maxSessionHours);
+
         try {
-            $stmt->execute([$title, $description, $category, $skillLevel, $pointsRequired, $skillId, $userId]);
-            return true;
+            $stmt = $this->db->prepare("UPDATE skills SET title = ?, description = ?, category = ?, skill_level = ?, points_required = ?, max_session_hours = ? WHERE id = ? AND user_id = ?");
+            $stmt->execute([$title, $description, $category, $skillLevel, $pointsRequired, $maxSessionHours, $skillId, $userId]);
         } catch (PDOException $e) {
-            return false;
+            // max_session_hours column not yet migrated — update without it
+            try {
+                $stmt = $this->db->prepare("UPDATE skills SET title = ?, description = ?, category = ?, skill_level = ?, points_required = ? WHERE id = ? AND user_id = ?");
+                $stmt->execute([$title, $description, $category, $skillLevel, $pointsRequired, $skillId, $userId]);
+            } catch (PDOException $e2) {
+                return false;
+            }
         }
+        return true;
     }
     
     // Delete skill

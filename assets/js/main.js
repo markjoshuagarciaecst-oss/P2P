@@ -258,33 +258,61 @@ function rejectBooking(bookingId) {
 }
 
 function completeBooking(bookingId) {
-    console.log('completeBooking called with ID:', bookingId);
-    if (confirm('Mark this session as completed? Points will be transferred.')) {
-        console.log('User confirmed, making AJAX call...');
+    // Kept for backward compatibility — triggers teacher confirm flow
+    teacherConfirmBooking(bookingId);
+}
+
+// Teacher confirms session is complete (step 1 of mutual agreement)
+function teacherConfirmBooking(bookingId) {
+    $.ajax({
+        url: window.APP_URL + '/api/bookings.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { action: 'teacher_confirm', id: bookingId },
+        success: function(response) {
+            if (response.success) {
+                if (response.completed) {
+                    showToast('Session completed! Points have been transferred.', 'success');
+                } else {
+                    showToast(response.message || 'Confirmation sent. Waiting for learner.', 'info');
+                }
+                setTimeout(function() { window.location.reload(); }, 2000);
+            } else {
+                showToast(response.message || 'Failed to confirm session', 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            showToast('Error: ' + error, 'error');
+            console.error('AJAX Error:', xhr.responseText);
+        }
+    });
+}
+
+// Learner confirms session is complete (step 2 of mutual agreement)
+function learnerConfirmBooking(bookingId) {
+    if (confirm('Confirm that this session is complete? Points will be deducted from your balance once both parties confirm.')) {
         $.ajax({
             url: window.APP_URL + '/api/bookings.php',
             type: 'POST',
             dataType: 'json',
-            data: { action: 'complete', id: bookingId },
+            data: { action: 'learner_confirm', id: bookingId },
             success: function(response) {
-                console.log('AJAX success response:', response);
                 if (response.success) {
-                    showToast('Session completed! Points transferred.', 'success');
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1500);
+                    if (response.completed) {
+                        showToast('Session completed! Points have been transferred.', 'success');
+                    } else {
+                        showToast(response.message || 'Confirmation sent. Waiting for teacher.', 'info');
+                    }
+                    setTimeout(function() { window.location.reload(); }, 2000);
                 } else {
-                    showToast(response.message || 'Failed to complete session', 'error');
+                    showToast(response.message || 'Failed to confirm session', 'error');
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX error:', xhr.status, xhr.responseText);
                 showToast('Error: ' + error, 'error');
                 console.error('AJAX Error:', xhr.responseText);
             }
         });
-    } else {
-        console.log('User cancelled the completion');
     }
 }
 

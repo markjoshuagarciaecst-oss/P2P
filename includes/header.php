@@ -22,7 +22,7 @@ require_once __DIR__ . '/../classes/Notification.php';
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="<?php echo APP_URL; ?>/index.php">
-                <i class="fas fa-exchange-alt"></i> <?php echo APP_NAME; ?>
+                <i class="fas fa-clock"></i> <?php echo APP_NAME; ?>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

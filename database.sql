@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS skills (
     category VARCHAR(100) NOT NULL,
     skill_level ENUM('Beginner', 'Intermediate', 'Expert') DEFAULT 'Beginner',
     points_required INT DEFAULT 10,
+    max_session_hours INT NOT NULL DEFAULT 1 COMMENT 'Max hours teacher is willing to teach per session',
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -55,14 +56,23 @@ CREATE TABLE IF NOT EXISTS bookings (
     skill_id INT NOT NULL,
     scheduled_date DATE NOT NULL,
     scheduled_time TIME NOT NULL,
+    session_duration INT NOT NULL DEFAULT 1 COMMENT 'Duration in hours (1 or 2)',
     status ENUM('pending', 'accepted', 'rejected', 'completed', 'cancelled') DEFAULT 'pending',
     points_transferred TINYINT(1) DEFAULT 0,
+    teacher_confirmed TINYINT(1) DEFAULT 0 COMMENT 'Teacher marked session as complete',
+    learner_confirmed TINYINT(1) DEFAULT 0 COMMENT 'Learner confirmed session is complete',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
 );
+
+-- Migration: add new columns to existing bookings table (run if table already exists)
+-- ALTER TABLE bookings ADD COLUMN session_duration INT NOT NULL DEFAULT 1 AFTER scheduled_time;
+-- ALTER TABLE bookings ADD COLUMN teacher_confirmed TINYINT(1) DEFAULT 0 AFTER points_transferred;
+-- ALTER TABLE bookings ADD COLUMN learner_confirmed TINYINT(1) DEFAULT 0 AFTER teacher_confirmed;
+-- ALTER TABLE skills ADD COLUMN max_session_hours INT NOT NULL DEFAULT 1 AFTER points_required;
 
 -- Reviews table
 CREATE TABLE IF NOT EXISTS reviews (
@@ -95,12 +105,14 @@ CREATE TABLE IF NOT EXISTS point_transactions (
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
+    booking_id INT DEFAULT NULL,
     title VARCHAR(200) NOT NULL,
     message TEXT NOT NULL,
-    type ENUM('general', 'booking_request', 'booking_accepted', 'booking_rejected', 'session_completed', 'new_review', 'points') DEFAULT 'general',
+    type ENUM('general', 'booking_request', 'booking_accepted', 'booking_rejected', 'session_completed', 'session_completion_requested', 'new_review', 'points') DEFAULT 'general',
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
 );
 
 -- Categories table

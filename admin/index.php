@@ -57,10 +57,13 @@ $recentBookings = $stmt->fetchAll();
             <a href="users.php" class="btn btn-outline-primary me-2">
                 <i class="fas fa-users me-1"></i>Users
             </a>
+            <a href="skills.php" class="btn btn-outline-success me-2">
+                <i class="fas fa-graduation-cap me-1"></i>Skills
+            </a>
             <a href="bookings.php" class="btn btn-outline-info me-2">
                 <i class="fas fa-calendar me-1"></i>Bookings
             </a>
-            <a href="reports.php" class="btn btn-outline-success">
+            <a href="reports.php" class="btn btn-outline-secondary">
                 <i class="fas fa-chart-bar me-1"></i>Reports
             </a>
         </div>
@@ -75,13 +78,15 @@ $recentBookings = $stmt->fetchAll();
                 <div class="stat-label">Total Users</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-icon text-success"><i class="fas fa-graduation-cap"></i></div>
-                <div class="stat-value"><?php echo $totalSkills; ?></div>
-                <div class="stat-label">Active Skills</div>
-            </div>
-        </div>
+                <div class="col-md-3">
+                    <a href="skills.php" class="text-decoration-none">
+                    <div class="card stat-card">
+                        <div class="stat-icon text-success"><i class="fas fa-graduation-cap"></i></div>
+                        <div class="stat-value"><?php echo $totalSkills; ?></div>
+                        <div class="stat-label">Active Skills</div>
+                    </div>
+                    </a>
+                </div>
         <div class="col-md-3">
             <div class="card stat-card">
                 <div class="stat-icon text-info"><i class="fas fa-calendar-alt"></i></div>
