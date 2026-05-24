@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     total_reviews INT DEFAULT 0,
     role ENUM('user', 'admin') DEFAULT 'user',
     is_active TINYINT(1) DEFAULT 1,
+    otp_code VARCHAR(6) DEFAULT NULL,
+    otp_expires_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

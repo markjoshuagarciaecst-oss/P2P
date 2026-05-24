@@ -3,10 +3,9 @@ require_once '../config/database.php';
 require_once '../classes/User.php';
 
 $pageTitle = 'Login';
-$error = '';
-$success = '';
+$error     = '';
+$success   = '';
 
-// Check if already logged in
 if (isLoggedIn()) {
     redirect('../index.php');
 }
@@ -14,59 +13,61 @@ if (isLoggedIn()) {
 $userObj = new User();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = sanitize($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    if (empty($email) || empty($password)) {
-        $error = 'Please fill in all fields';
-    } else {
-        $user = $userObj->login($email, $password);
-        if ($user) {
-            $redirect = $_GET['redirect'] ?? 'index.php';
-            redirect('../' . $redirect);
+
+    // ── Step 1: email + password ──────────────────────────────────────────────
+    if (isset($_POST['email'])) {
+        $email    = sanitize($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (empty($email) || empty($password)) {
+            $error = 'Please fill in all fields.';
         } else {
-            $error = 'Invalid email or password';
+            $result = $userObj->login($email, $password);
+
+            if ($result === false) {
+                $error = 'Invalid email or password.';
+            } elseif ($result === 'otp_sent') {
+                // Redirect to OTP verification page
+                redirect('verify-otp.php');
+            } else {
+                // OTP columns not migrated or mail failed — already logged in
+                $redirect = $_GET['redirect'] ?? 'index.php';
+                redirect('../' . $redirect);
+            }
         }
     }
 }
 ?>
-
 <?php include '../includes/header.php'; ?>
 
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-5">
-            <div class="card mt-5">
+            <div class="card mt-5 shadow-sm">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
                         <i class="fas fa-user-circle fa-4x text-primary"></i>
                         <h3 class="mt-3">Welcome Back</h3>
                         <p class="text-muted">Login to continue your learning journey</p>
                     </div>
-                    
+
                     <?php if ($error): ?>
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?>
                     </div>
                     <?php endif; ?>
-                    
-                    <?php if ($success): ?>
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-2"></i><?php echo $success; ?>
-                    </div>
-                    <?php endif; ?>
-                    
+
                     <form method="POST" action="">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo sanitize($_POST['email'] ?? ''); ?>" required>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="<?php echo sanitize($_POST['email'] ?? ''); ?>" required autofocus>
                             </div>
                         </div>
-                        
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label for="password" class="form-label">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-lock"></i></span>
@@ -76,29 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </button>
                             </div>
                         </div>
-                        
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember">
-                            <label class="form-check-label" for="remember">Remember me</label>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-sign-in-alt me-2"></i>Login
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>Continue
                         </button>
                     </form>
-                    
+
                     <div class="text-center mt-4">
-                        <p>Don't have an account? 
+                        <p class="mb-0">Don't have an account?
                             <a href="register.php" class="text-primary">Register here</a>
                         </p>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="text-center">
-                        <p class="text-muted small">Demo Account</p>
-                        <p class="small mb-1"><strong>Email:</strong> user@demo.com</p>
-                        <p class="small"><strong>Password:</strong> demo123</p>
                     </div>
                 </div>
             </div>
@@ -107,18 +95,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-document.getElementById('togglePassword').addEventListener('click', function() {
-    const passwordInput = document.getElementById('password');
-    const icon = this.querySelector('i');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
+document.getElementById('togglePassword').addEventListener('click', function () {
+    const input = document.getElementById('password');
+    const icon  = this.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
     } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
 });
 </script>

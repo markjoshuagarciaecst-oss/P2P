@@ -63,6 +63,9 @@ $recentBookings = $stmt->fetchAll();
             <a href="bookings.php" class="btn btn-outline-info me-2">
                 <i class="fas fa-calendar me-1"></i>Bookings
             </a>
+            <a href="search.php" class="btn btn-outline-danger me-2">
+                <i class="fas fa-search me-1"></i>Content Search
+            </a>
             <a href="reports.php" class="btn btn-outline-secondary">
                 <i class="fas fa-chart-bar me-1"></i>Reports
             </a>

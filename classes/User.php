@@ -21,21 +21,144 @@ class User {
         }
     }
     
-    // Login user
+    // Login user — step 1: verify credentials, generate OTP, send email
+    // Returns: false (bad credentials) | 'otp_sent' (OTP emailed) | 'otp_unavailable' (mail failed, log in directly)
     public function login($email, $password) {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ? AND is_active = 1");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-        
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_name'] = $user['name'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_role'] = $user['role'];
-            $_SESSION['user_points'] = $user['points'];
-            return $user;
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            return false;
         }
-        return false;
+
+        // Check if OTP columns exist
+        $hasOtp = false;
+        try {
+            $s = $this->db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='otp_code'");
+            $s->execute();
+            $hasOtp = (bool)$s->fetchColumn();
+        } catch (PDOException $e) {}
+
+        if (!$hasOtp) {
+            // OTP columns not migrated yet — use session-only OTP (no DB storage)
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            require_once __DIR__ . '/../config/mail.php';
+            $subject = APP_NAME . ' — Your login code';
+            $html    = "
+            <div style='font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:8px'>
+                <h2 style='color:#0d6efd'>" . APP_NAME . "</h2>
+                <p>Hi <strong>" . htmlspecialchars($user['name']) . "</strong>,</p>
+                <p>Your login verification code is:</p>
+                <div style='font-size:2.5rem;font-weight:bold;letter-spacing:12px;text-align:center;
+                            background:#f0f4ff;padding:20px;border-radius:8px;margin:24px 0;color:#0d6efd'>
+                    $otp
+                </div>
+                <p style='color:#666'>This code expires in <strong>10 minutes</strong>.</p>
+            </div>";
+
+            $result = sendMail($user['email'], $user['name'], $subject, $html);
+
+            // Store OTP in session since DB columns don't exist yet
+            $_SESSION['otp_session_code']    = $otp;
+            $_SESSION['otp_session_expires'] = time() + 600;
+            $_SESSION['otp_user_data']       = $user; // store full user for createSession later
+
+            if ($result !== true) {
+                $_SESSION['otp_fallback_code'] = $otp;
+                $_SESSION['otp_mail_error']    = $result;
+            }
+
+            $_SESSION['otp_user_id']  = $user['id'];
+            $_SESSION['otp_redirect'] = $_GET['redirect'] ?? '';
+            return 'otp_sent';
+        }
+
+        // Generate 6-digit OTP, valid for 10 minutes
+        $otp     = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expires = date('Y-m-d H:i:s', time() + 600);
+
+        $this->db->prepare("UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?")
+                 ->execute([$otp, $expires, $user['id']]);
+
+        // Send OTP email
+        require_once __DIR__ . '/../config/mail.php';
+
+        $subject = APP_NAME . ' — Your login code';
+        $html    = "
+        <div style='font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e0e0e0;border-radius:8px'>
+            <h2 style='color:#0d6efd;margin-bottom:8px'>" . APP_NAME . "</h2>
+            <p>Hi <strong>" . htmlspecialchars($user['name']) . "</strong>,</p>
+            <p>Your login verification code is:</p>
+            <div style='font-size:2.5rem;font-weight:bold;letter-spacing:12px;text-align:center;
+                        background:#f0f4ff;padding:20px;border-radius:8px;margin:24px 0;color:#0d6efd'>
+                $otp
+            </div>
+            <p style='color:#666'>This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+            <p style='color:#999;font-size:0.85rem'>If you didn't try to log in, you can safely ignore this email.</p>
+        </div>";
+
+        $result = sendMail($user['email'], $user['name'], $subject, $html);
+
+        if ($result !== true) {
+            // Email failed or not configured — store OTP in session so verify-otp.php can show it
+            error_log("OTP email failed for user {$user['id']}: $result");
+            $_SESSION['otp_fallback_code'] = $otp;
+            $_SESSION['otp_mail_error']    = $result; // 'not_configured' or actual error
+        }
+
+        // Always go to OTP page — never skip it
+        $_SESSION['otp_user_id']  = $user['id'];
+        $_SESSION['otp_redirect'] = $_GET['redirect'] ?? '';
+
+        return 'otp_sent';
+    }
+
+    // Verify OTP — step 2: check code, complete login
+    public function verifyOtp(int $userId, string $code): bool {
+        // Check session-based OTP first (used when DB columns not yet migrated)
+        if (!empty($_SESSION['otp_session_code'])) {
+            $valid = $_SESSION['otp_session_code'] === $code
+                  && time() < ($_SESSION['otp_session_expires'] ?? 0);
+
+            if ($valid && !empty($_SESSION['otp_user_data'])) {
+                $user = $_SESSION['otp_user_data'];
+                unset($_SESSION['otp_session_code'], $_SESSION['otp_session_expires'], $_SESSION['otp_user_data']);
+                $this->createSession($user);
+                return true;
+            }
+            return false;
+        }
+
+        // Normal DB-based OTP check
+        $stmt = $this->db->prepare(
+            "SELECT * FROM users WHERE id = ? AND otp_code = ? AND otp_expires_at > NOW() AND is_active = 1"
+        );
+        $stmt->execute([$userId, $code]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            return false;
+        }
+
+        // Clear OTP
+        $this->db->prepare("UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE id = ?")
+                 ->execute([$userId]);
+
+        $this->createSession($user);
+        return true;
+    }
+
+    // Create the authenticated session
+    private function createSession(array $user): void {
+        $_SESSION['user_id']     = $user['id'];
+        $_SESSION['user_name']   = $user['name'];
+        $_SESSION['user_email']  = $user['email'];
+        $_SESSION['user_role']   = $user['role'];
+        $_SESSION['user_points'] = $user['points'];
+        // Clear any pending OTP state
+        unset($_SESSION['otp_user_id'], $_SESSION['otp_redirect']);
     }
     
     // Get user by ID
