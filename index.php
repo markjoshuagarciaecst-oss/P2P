@@ -18,7 +18,7 @@ $categories = $skillObj->getCategories();
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
-        <h1>Welcome to SkillSwap</h1>
+        <h1>Welcome to <?php echo APP_NAME; ?></h1>
         <p>Exchange knowledge and skills with peers. Teach what you know, learn what you don't.</p>
         <div class="mt-4">
             <?php if (!isLoggedIn()): ?>

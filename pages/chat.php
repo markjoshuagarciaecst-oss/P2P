@@ -17,25 +17,25 @@ $bookingId = isset($_GET['booking_id']) ? (int)$_GET['booking_id'] : 0;
 $targetUserId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 $userId = getUserId();
 
-// Get chat database and create table if needed
+// Get chat database — table should already exist from database.sql import
+// Only create if genuinely missing (catches first-time setup)
 $db = Database::getInstance();
-$db->exec("CREATE TABLE IF NOT EXISTS chat_messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    booking_id INT NULL,
-    sender_id INT NOT NULL,
-    receiver_id INT NULL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (booking_id) REFERENCES bookings(id),
-    FOREIGN KEY (sender_id) REFERENCES users(id),
-    FOREIGN KEY (receiver_id) REFERENCES users(id)
-)");
-
-$columnCheck = $db->query("SHOW COLUMNS FROM chat_messages LIKE 'receiver_id'");
-if (!$columnCheck->fetch()) {
-    $db->exec("ALTER TABLE chat_messages ADD COLUMN receiver_id INT NULL AFTER sender_id");
+try {
+    $db->query("SELECT 1 FROM chat_messages LIMIT 1");
+} catch (PDOException $e) {
+    // Table doesn't exist yet — create it
+    $db->exec("CREATE TABLE IF NOT EXISTS chat_messages (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        booking_id INT NULL,
+        sender_id INT NOT NULL,
+        receiver_id INT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE SET NULL
+    )");
 }
-$db->exec("ALTER TABLE chat_messages MODIFY booking_id INT NULL");
 
 // Build chat conversation list
 $conversationStmt = $db->prepare("SELECT b.id AS booking_id,
@@ -207,7 +207,7 @@ if ($booking) {
                             <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Chat with <?php echo sanitize($otherUserName); ?></h5>
                             <small><?php echo sanitize($booking['skill_title']); ?></small>
                         </div>
-                        <button id="startVideoCall" class="btn btn-success btn-sm">
+                        <button id="startVideoCall" class="btn btn-success btn-sm" style="display:none">
                             <i class="fas fa-video me-1"></i>Video Call
                         </button>
                     </div>
@@ -273,130 +273,6 @@ if ($booking) {
     </div>
 </div>
 
-<?php if ($booking): ?>
-<!-- Video Call Section -->
-<div id="videoCallSection" class="container py-4" style="max-width: 800px; display: none;">
-    <div class="card">
-        <div class="card-header bg-success text-white">
-            <div class="row align-items-center">
-                <div class="col">
-                    <h5 class="mb-0">
-                        <i class="fas fa-video me-2"></i>
-                        Video Call with <?php echo sanitize($otherUserName); ?>
-                    </h5>
-                </div>
-                <div class="col-auto">
-                    <button id="endVideoCall" class="btn btn-danger btn-sm">
-                        <i class="fas fa-phone-slash me-1"></i>End Call
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Your Video</h6>
-                    <video id="localVideo" autoplay muted class="w-100 border rounded"></video>
-                </div>
-                <div class="col-md-6">
-                    <h6><?php echo sanitize($otherUserName); ?>'s Video</h6>
-                    <video id="remoteVideo" autoplay class="w-100 border rounded"></video>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const startVideoCallBtn = document.getElementById('startVideoCall');
-    const endVideoCallBtn = document.getElementById('endVideoCall');
-    const videoCallSection = document.getElementById('videoCallSection');
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-
-    let localStream;
-    let peer;
-    let currentCall;
-
-    // Initialize PeerJS
-    const userId = <?php echo getUserId(); ?>;
-    const otherUserId = <?php echo $isTeacher ? $booking['learner_id'] : $booking['teacher_id']; ?>;
-    const peerId = `user_${userId}_booking_${<?php echo $bookingId; ?>}`;
-
-    peer = new Peer(peerId);
-
-    peer.on('open', function(id) {
-        console.log('My peer ID is: ' + id);
-    });
-
-    peer.on('call', function(call) {
-        // Answer the call
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-            .then(function(stream) {
-                localStream = stream;
-                localVideo.srcObject = stream;
-                call.answer(stream);
-                currentCall = call;
-                videoCallSection.style.display = 'block';
-                startVideoCallBtn.style.display = 'none';
-            })
-            .catch(function(err) {
-                console.error('Failed to get local stream', err);
-                alert('Could not access camera/microphone');
-            });
-
-        call.on('stream', function(remoteStream) {
-            remoteVideo.srcObject = remoteStream;
-        });
-    });
-
-    startVideoCallBtn.addEventListener('click', function() {
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-            .then(function(stream) {
-                localStream = stream;
-                localVideo.srcObject = stream;
-                videoCallSection.style.display = 'block';
-                startVideoCallBtn.style.display = 'none';
-
-                // Call the other user
-                const otherPeerId = `user_${otherUserId}_booking_${<?php echo $bookingId; ?>}`;
-                const call = peer.call(otherPeerId, stream);
-                currentCall = call;
-
-                call.on('stream', function(remoteStream) {
-                    remoteVideo.srcObject = remoteStream;
-                });
-
-                call.on('close', function() {
-                    endCall();
-                });
-            })
-            .catch(function(err) {
-                console.error('Failed to get local stream', err);
-                alert('Could not access camera/microphone. Please allow access and try again.');
-            });
-    });
-
-    endVideoCallBtn.addEventListener('click', function() {
-        endCall();
-    });
-
-    function endCall() {
-        if (currentCall) {
-            currentCall.close();
-        }
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
-        }
-        localVideo.srcObject = null;
-        remoteVideo.srcObject = null;
-        videoCallSection.style.display = 'none';
-        startVideoCallBtn.style.display = 'inline-block';
-    }
-});
-</script>
-<?php endif; ?>
+<?php // Video call removed — requires WebRTC signaling server not available on shared hosting ?>
 
 <?php include '../includes/footer.php'; ?>

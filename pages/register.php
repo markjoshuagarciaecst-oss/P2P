@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="text-center mb-4">
                         <i class="fas fa-user-plus fa-4x text-primary"></i>
                         <h3 class="mt-3">Create Account</h3>
-                        <p class="text-muted">Join SkillSwap and start exchanging skills</p>
+                        <p class="text-muted">Join <?php echo APP_NAME; ?> and start exchanging skills</p>
                     </div>
                     
                     <?php if ($error): ?>

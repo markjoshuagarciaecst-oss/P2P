@@ -47,7 +47,7 @@ require_once __DIR__ . '/../classes/Notification.php';
                     </li>
                     <?php endif; ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?php echo APP_URL; ?>/pages/chat.php">Chat</a>
+                        <a class="nav-link" href="<?php echo APP_URL; ?>/pages/messages.php">Messages</a>
                     </li>
                     <?php endif; ?>
                 </ul>

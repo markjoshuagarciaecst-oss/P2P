@@ -556,3 +556,355 @@ footer {
     background-color: var(--light-color);
     color: var(--primary-color);
 }
+
+/* ============================================================
+   MOBILE-FIRST RESPONSIVE IMPROVEMENTS
+   ============================================================ */
+
+/* ── Prevent horizontal scroll ───────────────────────────────*/
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* ── Navbar mobile fixes ─────────────────────────────────────*/
+@media (max-width: 991px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .navbar-collapse {
+        background: rgba(0,0,0,0.15);
+        border-radius: 10px;
+        padding: 10px;
+        margin-top: 8px;
+    }
+
+    .navbar .form-control {
+        margin: 8px 0 4px;
+    }
+
+    /* Points badge in nav — smaller on mobile */
+    .navbar .badge {
+        font-size: 0.7rem;
+        padding: 3px 7px;
+    }
+}
+
+/* ── Hero section ────────────────────────────────────────────*/
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 50px 16px;
+    }
+
+    .hero-section h1 {
+        font-size: 1.6rem;
+        line-height: 1.3;
+    }
+
+    .hero-section p {
+        font-size: 0.95rem;
+    }
+
+    .hero-section .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .hero-section .btn + .btn {
+        margin-left: 0 !important;
+    }
+}
+
+/* ── Search box ──────────────────────────────────────────────*/
+@media (max-width: 768px) {
+    .search-box {
+        margin-top: 0;
+        padding: 16px;
+        border-radius: 10px;
+    }
+
+    .search-box .row > div {
+        margin-bottom: 8px;
+    }
+}
+
+/* ── Cards — disable lift on touch devices ───────────────────*/
+@media (hover: none) {
+    .card:hover {
+        transform: none;
+        box-shadow: var(--card-shadow);
+    }
+
+    .category-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .btn-primary:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+/* ── Stat cards ──────────────────────────────────────────────*/
+@media (max-width: 576px) {
+    .stat-card {
+        padding: 14px 10px;
+    }
+
+    .stat-card .stat-icon {
+        font-size: 1.8rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .stat-card .stat-label {
+        font-size: 0.8rem;
+    }
+}
+
+/* ── Tables — horizontal scroll on mobile ────────────────────*/
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    .table th,
+    .table td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+}
+
+/* ── Booking cards ───────────────────────────────────────────*/
+@media (max-width: 768px) {
+    /* Stack booking card columns vertically */
+    .booking-card-row .col-md-2,
+    .booking-card-row .col-md-6 {
+        text-align: center !important;
+    }
+
+    .profile-avatar-lg {
+        width: 60px;
+        height: 60px;
+    }
+
+    .points-badge {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+    }
+}
+
+/* ── Forms ───────────────────────────────────────────────────*/
+@media (max-width: 576px) {
+    .form-control {
+        padding: 10px 12px;
+        font-size: 16px; /* prevents iOS zoom on focus */
+    }
+
+    .form-select {
+        font-size: 16px;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+    }
+}
+
+/* ── Dashboard sidebar ───────────────────────────────────────*/
+@media (max-width: 768px) {
+    /* Make sidebar horizontal scroll on mobile */
+    .list-group.mb-4 {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        gap: 4px;
+    }
+
+    .list-group.mb-4 .list-group-item {
+        display: inline-block;
+        border-radius: 20px !important;
+        border: 1px solid #dee2e6;
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+}
+
+/* ── Messages page ───────────────────────────────────────────*/
+@media (max-width: 768px) {
+    /* Stack conversation list above chat on mobile */
+    #msgBox {
+        height: 300px !important;
+    }
+
+    .col-lg-4, .col-lg-8 {
+        width: 100%;
+    }
+}
+
+/* ── Admin tables ────────────────────────────────────────────*/
+@media (max-width: 768px) {
+    .admin-table-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .admin-table-actions .btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ── Modal ───────────────────────────────────────────────────*/
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 8px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+}
+
+/* ── Category cards grid ─────────────────────────────────────*/
+@media (max-width: 576px) {
+    .category-card {
+        padding: 16px 10px;
+    }
+
+    .category-card i {
+        font-size: 2rem;
+    }
+
+    .category-card h5 {
+        font-size: 0.85rem;
+    }
+}
+
+/* ── Skill detail page ───────────────────────────────────────*/
+@media (max-width: 768px) {
+    .skill-detail-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .skill-detail-header img {
+        margin: 0 auto 12px;
+    }
+}
+
+/* ── Bottom navigation bar for mobile ───────────────────────*/
+@media (max-width: 768px) {
+    /* Add padding so content isn't hidden behind bottom nav */
+    body {
+        padding-bottom: 70px;
+    }
+
+    .bottom-nav {
+        display: flex !important;
+    }
+}
+
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    z-index: 1030;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+}
+
+.bottom-nav a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.65rem;
+    gap: 3px;
+    transition: color 0.2s;
+}
+
+.bottom-nav a i {
+    font-size: 1.2rem;
+}
+
+.bottom-nav a.active,
+.bottom-nav a:hover {
+    color: #667eea;
+}
+
+.bottom-nav a .nav-badge {
+    position: absolute;
+    top: 4px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Toast — full width on mobile ────────────────────────────*/
+@media (max-width: 576px) {
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+    }
+
+    .toast {
+        width: 100%;
+    }
+}
+
+/* ── Improve tap targets ─────────────────────────────────────*/
+@media (max-width: 768px) {
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .nav-tabs .nav-link {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+
+    .list-group-item {
+        padding: 12px 14px;
+    }
+}
+
+/* ── Profile page ────────────────────────────────────────────*/
+@media (max-width: 576px) {
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* ── Points badge in header ──────────────────────────────────*/
+@media (max-width: 576px) {
+    .navbar .badge.bg-warning {
+        display: none; /* hide points in nav on very small screens — shown in bottom nav */
+    }
+}

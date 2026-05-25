@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <?php echo ucfirst($booking['status']); ?>
                             </span>
                             <?php if ($booking['status'] === 'accepted'): ?>
-                            <a href="chat.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block">
+                            <a href="messages.php?b=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block">
                                 <i class="fas fa-comments me-1"></i>Chat
                             </a>
                             <?php if (!$booking['learner_confirmed']): ?>
@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 </button>
                             </div>
                             <?php elseif ($booking['status'] === 'accepted'): ?>
-                            <a href="chat.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block mb-2">
+                            <a href="messages.php?b=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info mt-2 d-block mb-2">
                                 <i class="fas fa-comments me-1"></i>Chat
                             </a>
                             <?php if (!$booking['teacher_confirmed']): ?>

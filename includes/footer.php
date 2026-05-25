@@ -45,5 +45,49 @@
     <?php if (isset($extraScripts)): ?>
         <?php echo $extraScripts; ?>
     <?php endif; ?>
+
+    <!-- Toast container -->
+    <div class="toast-container"></div>
+
+    <?php if (isLoggedIn()): ?>
+    <!-- Bottom navigation — visible on mobile only -->
+    <nav class="bottom-nav">
+        <a href="<?php echo APP_URL; ?>/index.php">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>/pages/skills.php">
+            <i class="fas fa-search"></i>
+            <span>Browse</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>/pages/bookings.php">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Bookings</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>/pages/messages.php">
+            <i class="fas fa-comments"></i>
+            <span>Messages</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>/pages/notifications.php" style="position:relative">
+            <i class="fas fa-bell"></i>
+            <?php
+            // Show unread count on bell icon
+            if (class_exists('Notification')) {
+                $notifObj = new Notification();
+                $uc = $notifObj->getUnreadCount(getUserId());
+                if ($uc > 0) {
+                    echo '<span class="nav-badge">' . ($uc > 9 ? '9+' : $uc) . '</span>';
+                }
+            }
+            ?>
+            <span>Alerts</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>/pages/dashboard.php">
+            <i class="fas fa-user"></i>
+            <span><?php echo htmlspecialchars(explode(' ', $_SESSION['user_name'])[0]); ?></span>
+        </a>
+    </nav>
+    <?php endif; ?>
+
 </body>
 </html>

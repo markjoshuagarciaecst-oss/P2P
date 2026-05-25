@@ -1,71 +1,82 @@
 <?php
-// Database Configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'skillswap');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// ─────────────────────────────────────────────────────────────────────────────
+// Database & Application Configuration
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Application Configuration
-define('APP_NAME', 'Time for skill');
-define('APP_URL', 'http://localhost/P2P');
+// ── Database — fill in YOUR InfinityFree values here ─────────────────────────
+define('DB_HOST', 'sql209.infinityfree.com');   // ← REPLACE with your MySQL Server from InfinityFree panel
+define('DB_NAME', 'if0_42008218_skillswap');   // ← REPLACE with your Database Name
+define('DB_USER', 'if0_42008218');   // ← REPLACE with your Database Username
+define('DB_PASS', 'Hackyu33');     // ← REPLACE with your Database Password
+
+// ── Application ───────────────────────────────────────────────────────────────
+define('APP_NAME', 'Time for Skill');
+define('APP_URL',  'https://timeforskill.infinityfree.me'); // your exact domain
 define('DEFAULT_POINTS', 100);
 
-// Session Configuration
-session_start();
+// ── Session ───────────────────────────────────────────────────────────────────
+if (session_status() === PHP_SESSION_NONE) {
+    // Fix for shared hosting where sessions may not persist between redirects
+    ini_set('session.cookie_path', '/');
+    ini_set('session.use_cookies', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.gc_maxlifetime', 3600);
+    ini_set('session.cookie_lifetime', 0);
+    session_name('TIMEFORSKILL');
+    session_start();
+}
 
-// Timezone
-date_default_timezone_set('Asia/Kolkata');
+// ── Timezone ──────────────────────────────────────────────────────────────────
+date_default_timezone_set('Asia/Manila');
 
-// Auto-load classes
-spl_autoload_register(function($class) {
-    $paths = [
-        'classes/' . $class . '.php',
-        'config/' . $class . '.php'
-    ];
-    
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            require_once $path;
+// ── Auto-load classes ─────────────────────────────────────────────────────────
+spl_autoload_register(function ($class) {
+    $base = dirname(__DIR__);
+    foreach (array('classes', 'config') as $dir) {
+        $file = $base . '/' . $dir . '/' . $class . '.php';
+        if (file_exists($file)) {
+            require_once $file;
             return;
         }
     }
 });
 
-// Database Connection
+// ── Database connection (singleton) ───────────────────────────────────────────
 class Database {
     private static $instance = null;
     private $connection;
-    
+
     private function __construct() {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-            $options = [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+            $this->connection = new PDO($dsn, DB_USER, DB_PASS, array(
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ];
-            $this->connection = new PDO($dsn, DB_USER, DB_PASS, $options);
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ));
         } catch (PDOException $e) {
-            die("Database connection failed: " . $e->getMessage());
+            die('Database connection failed. Please check your configuration.');
         }
     }
-    
+
     public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance->connection;
     }
-    
+
     private function __clone() {}
-    public function __wakeup() {
-        throw new Exception("Cannot unserialize singleton");
-    }
+    public function __wakeup() { throw new Exception('Cannot unserialize singleton'); }
 }
 
-// Helper Functions
+// ── Helper functions ──────────────────────────────────────────────────────────
 function redirect($url) {
-    header("Location: $url");
+    if (strpos($url, 'http') !== 0) {
+        $url = APP_URL . '/' . ltrim($url, '/');
+    }
+    header('Location: ' . $url);
     exit();
 }
 
@@ -74,7 +85,7 @@ function isLoggedIn() {
 }
 
 function getUserId() {
-    return $_SESSION['user_id'] ?? null;
+    return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 }
 
 function sanitize($data) {

@@ -125,8 +125,21 @@ CREATE TABLE IF NOT EXISTS categories (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Chat messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id INT NULL,
+    sender_id INT NOT NULL,
+    receiver_id INT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Insert default categories
-INSERT INTO categories (name, icon) VALUES 
+INSERT IGNORE INTO categories (name, icon) VALUES 
 ('Music', 'fa-music'),
 ('Technology', 'fa-laptop'),
 ('Language', 'fa-language'),
@@ -138,6 +151,7 @@ INSERT INTO categories (name, icon) VALUES
 ('Writing', 'fa-pen'),
 ('Other', 'fa-star');
 
--- Admin user (email: admin@skillswap.com, password: admin123)
-INSERT INTO users (name, email, password, role, points) VALUES 
-('Admin', 'admin@skillswap.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 0);
+-- Admin user (email: admin@timeforskill.com, password: admin123)
+-- Change this password immediately after first login!
+INSERT IGNORE INTO users (name, email, password, role, points) VALUES 
+('Admin', 'admin@timeforskill.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 0);
